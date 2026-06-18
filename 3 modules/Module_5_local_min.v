@@ -1,4 +1,4 @@
-module local_min(
+odule local_min(
     input wire clk,
     input wire rst,
     input wire pixel_valid,
@@ -13,7 +13,7 @@ module local_min(
     input wire [7:0] row8,
     input wire [7:0] row9,
     input wire [7:0] row10,
-    // 11 column minimums — one per column in the sliding window
+    // 11 column minimums - one per column in the sliding window
     output reg [7:0] pci_min_0,
     output reg [7:0] pci_min_1,
     output reg [7:0] pci_min_2,
@@ -28,7 +28,7 @@ module local_min(
     output reg pci_min_valid
 );
 
-// Step 1: Column minimum tree — find min of the 11 rows for this column
+// Step 1: Column minimum tree - find min of the 11 rows for this column
 // Exactly like local_max but > becomes 
 wire [7:0] v01   = (row0  < row1)  ? row0  : row1;
 wire [7:0] v23   = (row2  < row3)  ? row2  : row3;
@@ -41,7 +41,7 @@ wire [7:0] v8910 = (v89   < row10) ? v89   : row10;
 wire [7:0] v_lo  = (v0123 < v4567) ? v0123 : v4567;
 wire [7:0] col_min = (v_lo < v8910) ? v_lo  : v8910;
 
-// Step 2: Shift register of column minimums — C0 is oldest, C10 is newest
+// Step 2: Shift register of column minimums - C0 is oldest, C10 is newest
 reg [7:0] C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10;
 
 always @(posedge clk) begin
@@ -63,7 +63,7 @@ always @(posedge clk) begin
         C9  <= C10;
         C10 <= col_min;   // newest column's minimum enters here
 
-        // Output all 11 column minimums directly — Module 7 needs all of them
+        // Output all 11 column minimums directly - Module 7 needs all of them
         pci_min_0  <= C0;
         pci_min_1  <= C1;
         pci_min_2  <= C2;

@@ -1,0 +1,177 @@
+`timescale 1ns/1ps
+
+module tb_m4_m5_m6;
+
+reg clk;
+reg rst;
+reg pci_valid;
+
+reg [7:0] pci_in;
+reg [7:0] gi_ref;
+
+wire [7:0] row0,row1,row2,row3,row4,row5,row6,row7,row8,row9,row10;
+
+wire [7:0] pci_min_0;
+wire [7:0] pci_min_1;
+wire [7:0] pci_min_2;
+wire [7:0] pci_min_3;
+wire [7:0] pci_min_4;
+wire [7:0] pci_min_5;
+wire [7:0] pci_min_6;
+wire [7:0] pci_min_7;
+wire [7:0] pci_min_8;
+wire [7:0] pci_min_9;
+wire [7:0] pci_min_10;
+
+wire pci_min_valid;
+
+wire [7:0] d0;
+
+wire [15:0] gamma0;
+
+assign d0 =
+    (pci_min_0 >= gi_ref) ?
+    (pci_min_0 - gi_ref) :
+    8'd0;
+
+//////////////////////////////////////////////////////
+// MODULE 4
+//////////////////////////////////////////////////////
+
+line_buffer_pci DUT4(
+    .clk(clk),
+    .rst(rst),
+    .wr_en(pci_valid),
+    .data_in(pci_in),
+
+    .row0(row0),
+    .row1(row1),
+    .row2(row2),
+    .row3(row3),
+    .row4(row4),
+    .row5(row5),
+    .row6(row6),
+    .row7(row7),
+    .row8(row8),
+    .row9(row9),
+    .row10(row10)
+);
+
+//////////////////////////////////////////////////////
+// MODULE 5
+//////////////////////////////////////////////////////
+
+local_min DUT5(
+    .clk(clk),
+    .rst(rst),
+    .pixel_valid(pci_valid),
+
+    .row0(row0),
+    .row1(row1),
+    .row2(row2),
+    .row3(row3),
+    .row4(row4),
+    .row5(row5),
+    .row6(row6),
+    .row7(row7),
+    .row8(row8),
+    .row9(row9),
+    .row10(row10),
+
+    .pci_min_0(pci_min_0),
+    .pci_min_1(pci_min_1),
+    .pci_min_2(pci_min_2),
+    .pci_min_3(pci_min_3),
+    .pci_min_4(pci_min_4),
+    .pci_min_5(pci_min_5),
+    .pci_min_6(pci_min_6),
+    .pci_min_7(pci_min_7),
+    .pci_min_8(pci_min_8),
+    .pci_min_9(pci_min_9),
+    .pci_min_10(pci_min_10),
+
+    .pci_min_valid(pci_min_valid)
+);
+
+//////////////////////////////////////////////////////
+// MODULE 6
+//////////////////////////////////////////////////////
+
+linear_approx DUT6(
+    .clk(clk),
+    .rst(rst),
+    .d(d0),
+    .gamma_out(gamma0)
+);
+
+//////////////////////////////////////////////////////
+// CLOCK
+//////////////////////////////////////////////////////
+
+always #5 clk = ~clk;
+
+integer i;
+
+//////////////////////////////////////////////////////
+// STIMULUS
+//////////////////////////////////////////////////////
+
+initial begin
+
+    clk = 0;
+    rst = 1;
+
+    pci_valid = 0;
+
+    pci_in = 0;
+
+    gi_ref = 8'd40;
+
+    #20;
+
+    rst = 0;
+    pci_valid = 1;
+
+    for(i=0;i<400;i=i+1)
+    begin
+        pci_in = i % 256;
+        #10;
+    end
+
+    pci_valid = 0;
+
+    #100;
+
+    $finish;
+
+end
+
+//////////////////////////////////////////////////////
+// MONITOR
+//////////////////////////////////////////////////////
+
+always @(posedge clk)
+begin
+    if(pci_min_valid)
+    begin
+        $display(
+        "Time=%0t PCI=%3d MIN0=%3d D=%3d GAMMA=%5d",
+        $time,
+        pci_in,
+        pci_min_0,
+        d0,
+        gamma0
+        );
+    end
+end
+
+//////////////////////////////////////////////////////
+// WAVEFORM
+//////////////////////////////////////////////////////
+
+initial begin
+    $dumpfile("m4_m5_m6.vcd");
+    $dumpvars(0,tb_m4_m5_m6);
+end
+
+endmodule

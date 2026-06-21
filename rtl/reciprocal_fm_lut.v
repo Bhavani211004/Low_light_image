@@ -1,23 +1,4 @@
-`timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 20.06.2026 14:13:44
-// Design Name: 
-// Module Name: reciprocal_fm_lut
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
+
 
 
 
@@ -32,12 +13,17 @@ module reciprocal_fm_lut(
 
 reg [31:0] rom [0:255];
 
-initial begin
+initial
+begin
     $readmemh("reciprocal_fm.mem", rom);
 end
 
-always @(*) begin
-    reciprocal = rom[fm];
+always @(*)
+begin
+    if(fm == 8'd0)
+        reciprocal = 32'd0;
+    else
+        reciprocal = rom[fm];
 end
 
 endmodule

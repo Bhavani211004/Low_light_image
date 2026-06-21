@@ -1,6 +1,4 @@
 
-`timescale 1ns / 1ps
-
 
 
 
@@ -53,6 +51,9 @@ reg [7:0] green_mem [0:PIXELS-1];
 reg [7:0] blue_mem  [0:PIXELS-1];
 
 integer i;
+integer file_r;
+integer file_g;
+integer file_b;
 wire pci_min_valid;
 
 
@@ -94,7 +95,20 @@ wire [27:0] numerator_dbg;
 wire [19:0] denominator_dbg;
 wire [31:0] reciprocal_dbg;
 
-wire [27:0] fm;                         
+wire [27:0] fm;  
+wire [31:0] reciprocal_fm;
+
+
+
+wire [15:0] r_reflectance;
+wire [15:0] g_reflectance;
+wire [15:0] b_reflectance; 
+wire [15:0] emod;  
+
+wire [7:0] r_out;
+wire [7:0] g_out;
+wire [7:0] b_out;     
+integer first_valid = 0;              
 //////////////////////////////////////////////////////
 // Module 1
 //////////////////////////////////////////////////////
@@ -256,26 +270,61 @@ edge_preserving_filter EPF(
 
 );
 
-wire [31:0] reciprocal_fm;
-wire [7:0] reflectance;
-
-reciprocal_fm_lut DUT14(
+reciprocal_fm_lut LUT(
 
     .fm(fm[7:0]),
-
     .reciprocal(reciprocal_fm)
 
 );
-
-reflectance_multiplier DUT15(
-
-    .pc(pc),
-
+reflectance_multiplier MUL_R(
+    .pc(r_in),
     .reciprocal(reciprocal_fm),
+    .reflectance(r_reflectance)
+);
 
-    .reflectance(reflectance)
+reflectance_multiplier MUL_G(
+    .pc(g_in),
+    .reciprocal(reciprocal_fm),
+    .reflectance(g_reflectance)
+);
+
+reflectance_multiplier MUL_B(
+    .pc(b_in),
+    .reciprocal(reciprocal_fm),
+    .reflectance(b_reflectance)
+);
+
+
+contrast_stretch_lut DUT16(
+
+    .fm(fm[7:0]),
+    .emod(emod)
 
 );
+image_reconstruction IMG_R(
+
+    .emod(emod),
+    .reflectance(r_reflectance),
+    .enhanced_pixel(r_out)
+
+);
+
+image_reconstruction IMG_G(
+
+    .emod(emod),
+    .reflectance(g_reflectance),
+    .enhanced_pixel(g_out)
+
+);
+
+image_reconstruction IMG_B(
+
+    .emod(emod),
+    .reflectance(b_reflectance),
+    .enhanced_pixel(b_out)
+
+);
+
 
 /*
 //////////////////////////////////////////////////////
@@ -519,6 +568,13 @@ begin
     $readmemh("C:/Users/Katta Bhavani/Downloads/red.hex",red_mem);
     $readmemh("C:/Users/Katta Bhavani/Downloads/green.hex",green_mem);
     $readmemh("C:/Users/Katta Bhavani/Downloads/blue.hex",blue_mem);
+  file_r = $fopen("C:/Users/Katta Bhavani/Downloads/enhanced_red.hex","w");
+file_g = $fopen("C:/Users/Katta Bhavani/Downloads/enhanced_green.hex","w");
+file_b = $fopen("C:/Users/Katta Bhavani/Downloads/enhanced_blue.hex","w");
+    
+/*$display("file_r=%0d", file_r);
+$display("file_g=%0d", file_g);
+$display("file_b=%0d", file_b);*/
 
     clk = 0;
     rst_n = 0;
@@ -540,12 +596,29 @@ begin
         b_in = blue_mem[i];
 
         #10;
+       // $display("Pixel %0d", i);
+       // $display("Time=%0t  Input R=%d  Output R=%d", $time, r_in, r_out);
+       //$display("R_OUT=%h G_OUT=%h B_OUT=%h", r_out, g_out, b_out);
+if ((^r_out !== 1'bx) && (first_valid == 0))
+begin
+    $display("First valid output at pixel = %0d", i);
+    first_valid = 1;
+end
+
+if (^r_out !== 1'bx)
+begin
+    $fdisplay(file_r,"%02x", r_out);
+    $fdisplay(file_g,"%02x", g_out);
+    $fdisplay(file_b,"%02x", b_out);
+end
     end
 
     pixel_valid = 0;
 
     #100;
-
+$fclose(file_r);
+$fclose(file_g);
+$fclose(file_b);
     $finish;
 end
 
@@ -560,7 +633,7 @@ begin
 
         $display("\n====================================================");
 
-       $display(
+     /*   $display(
         "TIME=%0t",
         $time
         );
@@ -664,10 +737,22 @@ EPF.den10
 
 $display("DENOMINATOR = %d", denominator_dbg);
 $display("RECIPROCAL  = %h", reciprocal_dbg);
-$display("Fm = %d", fm);
-$display("RECIPROCAL   = %08h", reciprocal_fm);
-$display("PRODUCT      = %d", DUT15.product);
-$display("REFLECTANCE  = %d", reflectance);
+$display("Fm             = %d", fm);
+$display("Reciprocal(Fm) = %08h", reciprocal_fm);
+
+$display("R Pixel        = %d", r_in);
+$display("G Pixel        = %d", g_in);
+$display("B Pixel        = %d", b_in);
+
+
+
+$display("R Reflectance  = %h", r_reflectance);
+$display("G Reflectance  = %h", g_reflectance);
+$display("B Reflectance  = %h", b_reflectance);
+$display("Emod = %h", emod);
+$display("Enhanced R = %d", r_out);
+$display("Enhanced G = %d", g_out);
+$display("Enhanced B = %d", b_out);*/
 
         $display("====================================================");
 
